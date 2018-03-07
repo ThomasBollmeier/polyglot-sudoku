@@ -41,6 +41,6 @@ def print_board(board):
             if len(values) == 1:
                 row += "{}".format(values[0])
             else:
-                row += "0"
+                row += "."
         print(row)
 

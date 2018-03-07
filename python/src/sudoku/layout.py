@@ -7,17 +7,45 @@ class Layout(object):
     def get_size(self):
         return self._nrows_area * self._ncols_area
     
-    def get_xmax_area(self):
-        return self._nrows_area
+    def get_all_cells(self):
+        cells = []
+        size = self.get_size()
+        for row in range(0, size):
+            for col in range(0, size):
+                cells.append((row, col))
+        return cells
     
-    def get_ymax_area(self):
-        return self._ncols_area
+    def get_all_groups(self):
+        
+        groups = []
+        size = self.get_size()
+        
+        for row in range(0, size):
+            groups.append(self.get_row(row))
+        
+        for col in range(0, size):
+            groups.append(self.get_column(col))
+        
+        for x in range(0, self._nrows_area):
+            for y in range(0, self._ncols_area):
+                groups.append(self.get_area(x, y))
+                
+        return groups
     
     def get_siblings(self, cell_pos):
-        return set(
-            self._get_row_siblings(cell_pos) +
-            self._get_column_siblings(cell_pos) +
-            self._get_area_siblings(cell_pos))
+        
+        row, col = cell_pos
+        x = col // self._ncols_area
+        y = row // self._nrows_area
+        
+        cells = self.get_row(row)
+        cells += self.get_column(col)
+        cells += self.get_area(x, y)
+        
+        ret = set(cells)
+        ret.remove(cell_pos)
+        
+        return ret
     
     def get_row(self, row):
         return [(row, c) for c in range(0, self.get_size())]
@@ -34,31 +62,3 @@ class Layout(object):
                 cell_pos = (r_min+i, c_min+j)
                 cells.append(cell_pos)
         return cells
-        
-    def _get_row_siblings(self, cell_pos):
-        row, col = cell_pos
-        size = self.get_size()
-        return [(row, c) for c in range(0, size) if c != col]
-    
-    def _get_column_siblings(self, cell_pos):
-        row, col = cell_pos
-        size = self.get_size()
-        return [(r, col) for r in range(0, size) if r != row]
-    
-    def _get_area_siblings(self, cell_pos):
-        siblings = []
-        row, col = cell_pos
-        r_min = (row // self._nrows_area) * self._nrows_area
-        c_min = (col // self._ncols_area) * self._ncols_area
-        for i in range(0, self._nrows_area):
-            for j in range(0, self._ncols_area):
-                sibling = (r_min+i, c_min+j)
-                if sibling != cell_pos:
-                    siblings.append(sibling)
-        return siblings
-    
-if __name__ == "__main__":
-    
-    layout = Layout()
-    
-    print(len(layout.get_siblings((0, 0))))
