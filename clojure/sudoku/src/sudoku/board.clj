@@ -1,19 +1,16 @@
 (ns sudoku.board
   (:require [sudoku.layout :as layout]))
 
-
 (defn make-board
   [layout]
   (let [size (layout/size layout)]
     {
       :layout layout
       :cells (reduce
-               (fn [board [row col]]
-                 (assoc board [row col] (set (range 1 (inc size)))))
+               (fn [cells [row col]]
+                 (assoc cells [row col] (set (range 1 (inc size)))))
                {}
-               (for [row (range size)
-                     col (range size)]
-                 [row col]))}))
+               (layout/cells layout))}))
 
 (defn find-free-cell
   [{:keys [cells]}]
