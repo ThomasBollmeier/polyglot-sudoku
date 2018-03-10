@@ -1,68 +1,77 @@
 (ns sudoku.board
+  (:require [clojure.set :as cs])
   (:require [sudoku.layout :as layout]))
 
 (defn make-board
   [layout]
   (let [size (layout/size layout)]
-    {
-      :layout layout
-      :cells (reduce
-               (fn [cells [row col]]
-                 (assoc cells [row col] (set (range 1 (inc size)))))
-               {}
-               (layout/cells layout))}))
+    {:layout layout
+     :fixed {}}))
 
 (defn find-free-cell
-  [{:keys [cells]}]
-  (let [free-cells (filter (fn [[pos values]] (> (count values) 1)) cells)]
-    (-> (reduce
-          (fn [{:keys [min-cell min-cnt] :as acc} [_ values :as cell]]
-            (if (or (nil? min-cell) (< (count values) min-cnt))
-              {:min-cell cell
-               :min-cnt (count values)}
-              acc))
-          {:min-cell nil
-           :min-cnt 0}
-        free-cells)
-        :min-cell)))
+  [{:keys [layout fixed]}]
+  (let [fixed-cells (set (keys fixed))
+        free-cells (->> (layout/cells layout)
+                        (remove fixed-cells))]
+    (when-not (empty? free-cells)
+      (first free-cells))))
 
-(defn remove-value
-  [board cell value]
-  (let [vals (get-in board [:cells cell])]
-    (if (contains? vals value)
-      (let [next-vals (disj vals value)]
-        {:board (assoc-in board [:cells cell] next-vals)
-         :single-val (when (= 1 (count next-vals)) (first next-vals))})
-      {:board board
-       :single-val nil})))
+(defn candidates
+  [{:keys [layout fixed]} cell]
+  (let [fixed-cells (set (keys fixed))]
+    (if (contains? fixed-cells cell)
+      #{(get fixed cell)}
+      (let [siblings (layout/siblings layout cell)]
+        (reduce (fn [acc sibling]
+                  (if (contains? fixed-cells sibling)
+                    (disj acc (get fixed sibling))
+                    acc))
+                (set (range 1 (inc (layout/size layout))))
+                siblings)))))
 
 (defn set-value
-  [board cell value]
-  (defn set-val-int
-    [board cell-vals]
-    (if (nil? (seq cell-vals))
-      board
-      (let [[c v] (first cell-vals)
-            siblings (layout/siblings (:layout board) c)
-            {:keys [board cell-vals]} (reduce
-                                        (fn [acc sibling]
-                                          (let [{:keys [board single-val]} (remove-value (:board acc) sibling v)]
-                                            (if (nil? single-val)
-                                              (assoc acc :board board)
-                                              (assoc acc :board board :cell-vals (conj (:cell-vals acc) [sibling single-val])))))
-                                        {:board (assoc-in board [:cells c] #{v})
-                                         :cell-vals (rest cell-vals)}
-                                        siblings)]
-        (recur board cell-vals))))
-  (set-val-int board [[cell value]]))
+  [{:keys [fixed] :as board} cell value]
+  (assoc board :fixed (assoc fixed cell value)))
 
-
-
-(-> (make-board [2 2])
-    (set-value [0 0] 1)
-    (set-value [0 1] 2)
-    (set-value [1 0] 3))
-
-
-
-(find-free-cell b)
+(defn solve
+  [board]
+  (defn group-valid?
+    [{:keys [layout fixed] :as board} grp]
+    (let [exp-num-distinct (layout/size layout)
+          vals (reduce (fn [acc cell]
+                         (if (contains? fixed cell)
+                           (conj acc (get fixed cell))
+                           acc))
+                       #{}
+                      grp)]
+      (= (count vals) exp-num-distinct)))
+  (defn valid?
+    [{:keys [layout] :as board}]
+    (let [grps (layout/groups layout)]
+      (every? (partial group-valid? board) grps)))
+  (defn solve-int
+    [placements]
+    (let [[board cell values] (first placements)
+          value (first values)
+          remaining (rest values)
+          plcmts (if (empty? remaining)
+                   (rest placements)
+                   (cons [board cell remaining] (rest placements)))
+          next-board (set-value board cell value)
+          next-cell (find-free-cell next-board)]
+      (if (nil? next-cell)
+        (if (valid? next-board)
+          next-board ; => solution found
+          (when-not (empty? plcmts)
+            (recur plcmts)))
+        (let [next-values (candidates next-board next-cell)]
+          (if (empty? next-values)
+            (when-not (empty? plcmts)
+              (recur plcmts))
+            (recur (cons [next-board next-cell next-values] plcmts)))))))
+  (if-let [cell (find-free-cell board)]
+    (let [values (candidates board cell)]
+      (if (empty? values)
+        (when (valid? board) board)
+        (solve-int [[board cell values]])))
+    (when (valid? board) board)))
