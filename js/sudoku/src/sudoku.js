@@ -85,7 +85,7 @@ const getCandidates = (board, geometry, idx) => {
     return candidates
 }
 
-const solve = (board, geometry, curIdx=0) => {
+const solveInternal = (cells, geometry, curIdx) => {
 
     const size = getSize(geometry)
 
@@ -93,55 +93,29 @@ const solve = (board, geometry, curIdx=0) => {
         return true
     }
 
-    if (board[curIdx] > 0) {
-        return solve(board, geometry, curIdx+1)
+    if (cells[curIdx] > 0) {
+        return solveInternal(cells, geometry, curIdx+1)
     } else {
-        let vals = getCandidates(board, geometry, curIdx)
+        let vals = getCandidates(cells, geometry, curIdx)
         for (let val of vals) {
-            board[curIdx] = val
-            let valid = solve(board, geometry, curIdx+1)
+            cells[curIdx] = val
+            let valid = solveInternal(cells, geometry, curIdx+1)
             if (valid) return true
-            board[curIdx] = 0
+            cells[curIdx] = 0
         }
         return false
     }
 
 }
 
-const printBoard = (board, size) => {
-
-    let row = ""
-    for (let i=0; i<size*size; i++) {
-        if (i % size == 0 && row.length > 0) {
-            console.log(row)
-            row = ""
-        }
-        row += board[i] > 0 ? board[i] : "."
-    }
-    console.log(row)
+const solve = ({cells, geometry}) => {
+    let cellsClone = [...cells]
+    return solveInternal(cellsClone, geometry, 0) ?
+        {cells: cellsClone, geometry} : null
 }
 
-
-const geometry = [3, 3]
-
-let board = [
-    6, 0, 0, 0, 0, 0, 4, 0, 0,
-    0, 9, 0, 0, 0, 0, 0, 0, 3,
-    0, 0, 0, 0, 0, 5, 0, 8, 0,
-    0, 4, 0, 9, 0, 0, 6, 0, 0,
-    5, 0, 0, 0, 0, 0, 0, 2, 0,
-    0, 0, 3, 0, 0, 7, 0, 0, 1,
-    0, 2, 0, 6, 0, 0, 0, 5, 0,
-    0, 0, 0, 0, 3, 0, 9, 0, 0,
-    0, 0, 1, 0, 0, 4, 0, 0, 7 
-]
-
-printBoard(board, getSize(geometry))
-console.log()
-
-if (solve(board, geometry)) {
-    printBoard(board, getSize(geometry))
-} else {
-    console.log("No solution")
+module.exports = {
+    getSize: ({geometry}) => getSize(geometry),
+    solve
 }
 
