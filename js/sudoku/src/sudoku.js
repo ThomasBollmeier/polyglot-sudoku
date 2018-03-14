@@ -1,3 +1,4 @@
+const { intRange, cartesianProduct } = require('./listutils')
 
 const getSize = (geometry) => {
     const [nRowsArea, nColsArea] = geometry;
@@ -5,45 +6,27 @@ const getSize = (geometry) => {
 }
 
 const getRowIndices = (geometry, row) => {
-    
     const size = getSize(geometry)
-    
-    let ret = []
-    for (let col=0; col<size; col++) {
-        ret.push(row*size + col)
-    }
-
-    return ret
+    return intRange(0, size).map(col => row*size + col)
 }
 
 const getColumnIndices = (geometry, col) => {
-    
     const size = getSize(geometry)
-    
-    let ret = []
-    for (let row=0; row<size; row++) {
-        ret.push(row*size + col)
-    }
-
-    return ret
+    return intRange(0, size).map(row => row*size + col)
 }
 
 const getAreaIndices = (geometry, x, y) => {
     
     const [nRowsArea, nColsArea] = geometry
     const size = getSize(geometry)
-    
-    let ret = []
 
-    for (let r=0; r<nRowsArea; r++) {
-        let row = y*nRowsArea + r
-        for (let c=0; c<nColsArea; c++) {
-            let col = x*nColsArea + c
-            ret.push(row*size + col)
-        }
-    }
-
-    return ret
+    return cartesianProduct(
+        intRange(0, nRowsArea), 
+        intRange(0, nColsArea)).map((r, c) => {
+            const row = y*nRowsArea + r
+            const col = x*nColsArea + c
+            return row * size + col
+        })
 }
 
 const getSiblings = (geometry, idx) => {

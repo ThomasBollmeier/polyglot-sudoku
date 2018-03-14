@@ -1,7 +1,7 @@
 const sudoku = require('./sudoku')
 const io = require('./io')
 
-const problem = io.readSudoku("schwer.txt")
+const problem = io.readSudoku(process.argv[2])
 
 io.printSudoku(problem)
 console.log()
