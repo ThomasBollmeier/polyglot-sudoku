@@ -1,55 +1,37 @@
 const { intRange, cartesianProduct } = require('./listutils')
 
-const getSize = (geometry) => {
-    const [nRowsArea, nColsArea] = geometry;
-    return nRowsArea * nRowsArea;
-}
+const getSize = ([nRowsArea, nColsArea]) => nRowsArea * nRowsArea
 
-const getRowIndices = (geometry, row) => {
-    const size = getSize(geometry)
-    return intRange(0, size).map(col => row*size + col)
-}
+const getSiblings = (geometry, idx) => {
 
-const getColumnIndices = (geometry, col) => {
-    const size = getSize(geometry)
-    return intRange(0, size).map(row => row*size + col)
-}
-
-const getAreaIndices = (geometry, x, y) => {
-    
     const [nRowsArea, nColsArea] = geometry
     const size = getSize(geometry)
-
-    return cartesianProduct(
+    const row = Math.floor(idx/size)
+    const col = idx % size
+    const x = Math.floor(col / nColsArea)
+    const y = Math.floor(row / nRowsArea)
+    
+    const rowIndices = intRange(0, size).map(c => row*size + c)
+    const colIndices = intRange(0, size).map(r => r*size + col)
+    const areaIndices = cartesianProduct(
         intRange(0, nRowsArea), 
         intRange(0, nColsArea)).map((r, c) => {
             const row = y*nRowsArea + r
             const col = x*nColsArea + c
             return row * size + col
         })
-}
-
-const getSiblings = (geometry, idx) => {
-
-    const size = getSize(geometry)
-    const [nRowsArea, nColsArea] = geometry
-    const row = Math.floor(idx/size)
-    const col = idx % size
-    const x = Math.floor(col / nColsArea)
-    const y = Math.floor(row / nRowsArea)
     
-    let ret = new Set(
-        getRowIndices(geometry, row)
-        .concat(getColumnIndices(geometry, col))
-        .concat(getAreaIndices(geometry, x, y)))
+    let ret = new Set([
+        ...rowIndices,
+        ...colIndices,
+        ...areaIndices
+    ])
     ret.delete(idx)
 
     return ret
 }
 
 const getCandidates = (board, geometry, idx) => {
-
-    let candidates = new Set()
 
     const nonEmptySiblings = [...getSiblings(geometry, idx)].filter((idx) => {
         return board[idx] > 0
@@ -58,14 +40,8 @@ const getCandidates = (board, geometry, idx) => {
         return vals.add(board[idx])
     }, new Set())
     const size = getSize(geometry)
-
-    for (let val=1; val<=size; val++) {
-        if (!usedValues.has(val)) {
-            candidates.add(val)
-        }
-    }
-
-    return candidates
+    
+    return new Set(intRange(1, size+1).filter(v => !usedValues.has(v)))
 }
 
 const solveInternal = (cells, geometry, curIdx) => {
