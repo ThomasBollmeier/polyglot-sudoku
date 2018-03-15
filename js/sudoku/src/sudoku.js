@@ -31,13 +31,13 @@ const getSiblings = (geometry, idx) => {
     return ret
 }
 
-const getCandidates = (board, geometry, idx) => {
+const getCandidates = (cells, geometry, idx) => {
 
     const nonEmptySiblings = [...getSiblings(geometry, idx)].filter((idx) => {
-        return board[idx] > 0
+        return cells[idx] > 0
     })
     const usedValues = nonEmptySiblings.reduce((vals, idx) => {
-        return vals.add(board[idx])
+        return vals.add(cells[idx])
     }, new Set())
     const size = getSize(geometry)
     
