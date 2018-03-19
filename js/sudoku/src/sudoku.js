@@ -15,7 +15,7 @@ const getSiblings = (geometry, idx) => {
     const colIndices = intRange(0, size).map(r => r*size + col)
     const areaIndices = cartesianProduct(
         intRange(0, nRowsArea), 
-        intRange(0, nColsArea)).map((r, c) => {
+        intRange(0, nColsArea)).map(([r, c]) => {
             const row = y*nRowsArea + r
             const col = x*nColsArea + c
             return row * size + col
