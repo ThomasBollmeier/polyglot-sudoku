@@ -1,6 +1,7 @@
 module Sudoku
 (makeBoard
 ,setCell
+,setCells
 ,solve
  ) where
 
@@ -56,16 +57,24 @@ setCell :: Board -> Position -> Int -> Board
 setCell (MkBoard layout cells) pos value =
   MkBoard layout (Map.insert pos value cells)
 
+setCells :: Board -> [(Position, Int)] -> Board
+setCells b pvs = foldl (\b (p,v) -> setCell b p v) b pvs
+
 solve :: Board -> Maybe Board
 solve b = Nothing -- TODO: implement
 
+consMaybe :: Maybe a -> Maybe [a] -> Maybe [a]
+consMaybe Nothing mxs = mxs
+consMaybe mx mxs = (:) <$> mx <*> mxs
+
 getUsedValues :: Board -> [Position] -> Set.Set Int
 getUsedValues (MkBoard _ cells) ps =
-  Set.fromList $ filter (/= 0) [getValue p | p <- ps]
-  where
-    getValue p = case (Map.lookup p cells) of
-      Just value -> value
-      Nothing -> 0
+  case mUsedValues of
+    Just usedValues -> Set.fromList usedValues
+    Nothing -> Set.empty
+    where
+      mUsedValues = foldr consMaybe (Just []) values
+      values = fmap (\p -> Map.lookup p cells) ps
 
 getCandidates :: Board -> Position -> [Int]
 getCandidates b pos =
@@ -74,3 +83,15 @@ getCandidates b pos =
     allValues = Set.fromList [1..size]
     size = getSize b
     usedValues = getUsedValues b $ getSiblings b pos
+
+getFreePosition :: Board -> Maybe Position
+getFreePosition b =
+  if not (null freePositions)
+    then Just (head freePositions)
+    else Nothing
+  where
+    (MkBoard _ cells) = b
+    maxIdx = (getSize b) - 1
+    allPositions = Set.fromList [(r, c) | r <- [0..maxIdx], c <- [0..maxIdx]]
+    fixedPositions = Set.fromList $ Map.keys cells
+    freePositions = Set.toList $ Set.difference allPositions fixedPositions
