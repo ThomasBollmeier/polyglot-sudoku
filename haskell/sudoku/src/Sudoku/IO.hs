@@ -1,11 +1,11 @@
 module Sudoku.IO
-(readSudoku)
+(fromSudokuFile)
 where
 
 import qualified Sudoku.Core as Core
 
-readSudoku :: String -> IO Core.Board
-readSudoku filePath = do
+fromSudokuFile :: String -> IO Core.Board
+fromSudokuFile filePath = do
   content <- readFile filePath
   return $ parseSudoku content
 
